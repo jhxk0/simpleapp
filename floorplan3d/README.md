@@ -12,6 +12,7 @@
 | `render_veranda_northwest.png` | Covered veranda |
 | `render_aerial_southeast.png` | Aerial view |
 | `render_interior_cutaway.png` | Roof removed, rooms and furniture |
+| `freecad_parts/` | One OBJ per material, used by `freecad_import.FCMacro` |
 | `model_info.json` | Key dimensions |
 
 ## What was taken from the drawing
@@ -21,16 +22,21 @@
 - Heights (from KESİTLER): ground ±0.00, floor +0.60, window head +2.80, eave +3.50,
   hip roof with 40 % slope and 90 cm overhang (ridge ≈ +6.05).
 
-## Rebuild
-1. Build the 3D model (any Python 3.9+):
-   ```
-   pip install ezdxf shapely trimesh mapbox_earcut numpy
-   python build_model.py plan.dxf output
-   ```
-2. Render the images with Blender 4.2 or newer (https://www.blender.org/download/):
-   ```
-   blender -b -P render.py -- output 96
-   ```
-   On Windows, if `blender` isn't on your PATH, use the full path, e.g.
-   `"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe" -b -P render.py -- output 96`.
-   (`pip install bpy` only works on Python 3.11, so running inside Blender is simpler.)
+## Open it in FreeCAD
+1. In FreeCAD: **Macro → Macros…**, set *User macros location* to this `floorplan3d` folder.
+2. Select `freecad_import.FCMacro` and click **Execute**.
+3. The house loads as coloured parts (walls, roof, glass, furniture…) and is saved as
+   `output/house.FCStd`. Hide the `Roof` and `Slab` objects (Space bar) to look inside.
+
+For pictures from FreeCAD: **Tools → Save picture…**.
+You can also just **File → Import** `output/house.obj` (single grey mesh).
+
+## Rebuild from the DXF
+```
+pip install ezdxf shapely trimesh mapbox_earcut numpy scipy
+python build_model.py plan.dxf output
+```
+This regenerates `house.glb`, `house.obj` and `output/freecad_parts/` (used by the FreeCAD macro).
+
+Optional, only for new rendered images: install Blender 4.2+ and run
+`blender -b -P render.py -- output 96`.

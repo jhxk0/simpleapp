@@ -210,6 +210,14 @@ class Scene:
         y_up.apply_transform(rot)
         y_up.export(Path(out_dir) / "house.glb")
         scene.export(Path(out_dir) / "house.obj")
+        # One OBJ per material (Z-up, metres) for the FreeCAD import macro.
+        parts = Path(out_dir) / "freecad_parts"
+        parts.mkdir(exist_ok=True)
+        for old in parts.glob("*.obj"):
+            old.unlink()
+        for mat in self.parts:
+            scene.geometry[mat].export(parts / f"{mat}.obj")
+        (parts / "colors.json").write_text(json.dumps({k: colors.get(k, [200, 200, 200]) for k in self.parts}))
 
 
 def hip_roof(s, x0, y0, x1, y1, z):
