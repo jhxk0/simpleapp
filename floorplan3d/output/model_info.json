@@ -1,0 +1,14 @@
+{
+  "footprint_m": [
+    10.95,
+    15.6
+  ],
+  "floor_level_m": 0.6,
+  "eave_m": 3.5,
+  "ridge_m": 6.05,
+  "openings": {
+    "door": 10,
+    "window": 7,
+    "glassdoor": 2
+  }
+}
