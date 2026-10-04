@@ -1,4 +1,10 @@
-"""Render house.glb with Blender (bpy). Usage: python3 render.py <out_dir> [samples]"""
+"""Render house.glb with Blender.
+
+Usage (any OS, with Blender installed):
+    blender -b -P render.py -- <out_dir> [samples]
+or, on Python 3.11 with `pip install bpy`:
+    python render.py <out_dir> [samples]
+"""
 import math
 import sys
 from pathlib import Path
@@ -6,8 +12,9 @@ from pathlib import Path
 import bpy
 from mathutils import Vector
 
-out = Path(sys.argv[1]).resolve()
-samples = int(sys.argv[2]) if len(sys.argv) > 2 else 64
+args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
+out = Path(args[0]).resolve()
+samples = int(args[1]) if len(args) > 1 else 64
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(out / "house.glb"))

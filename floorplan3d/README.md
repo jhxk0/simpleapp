@@ -22,8 +22,15 @@
   hip roof with 40 % slope and 90 cm overhang (ridge ≈ +6.05).
 
 ## Rebuild
-```
-pip install ezdxf shapely trimesh mapbox_earcut scipy bpy
-python3 build_model.py plan.dxf output
-python3 render.py output 96
-```
+1. Build the 3D model (any Python 3.9+):
+   ```
+   pip install ezdxf shapely trimesh mapbox_earcut numpy
+   python build_model.py plan.dxf output
+   ```
+2. Render the images with Blender 4.2 or newer (https://www.blender.org/download/):
+   ```
+   blender -b -P render.py -- output 96
+   ```
+   On Windows, if `blender` isn't on your PATH, use the full path, e.g.
+   `"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe" -b -P render.py -- output 96`.
+   (`pip install bpy` only works on Python 3.11, so running inside Blender is simpler.)
