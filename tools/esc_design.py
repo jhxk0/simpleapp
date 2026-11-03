@@ -2,8 +2,8 @@
 
 Per channel: STM32G071K8U6N running AM32, pin-compatible with AM32 target JUPITER_80_G071
 (HARDWARE_GROUP_G0_L, current ADC PA4, voltage ADC PA5, TARGET_VOLTAGE_DIVIDER 285), 3x LM2105
-half-bridge drivers, 6x CSD18543Q3A (60V 8.1mOhm). Board-level: high-side shunt + INA198 total
-current sense to the FC, 2x 10V gate-drive LDOs.
+half-bridge drivers, 6x CSD18543Q3A (60V 8.1mOhm). Board-level: 2x 10V gate-drive LDOs. No total-current
+sensor: FC connector pin 3 (CURR) is not connected.
 """
 from design import Design
 
@@ -15,19 +15,13 @@ FET_FP = "Package_SON:VSON-8_3.3x3.3mm_P0.65mm_NexFET"
 # ---------------------------------------------------------------- shared power
 d.group("Battery & sense")
 PADBIG = "Connector_Wire:SolderWirePad_1x01_SMD_5x10mm"
-d.add("TP", "Connector:TestPoint", "BAT+", PADBIG, {"1": "VBAT_IN"},
+# battery pads feed the VBAT / GND planes directly through via arrays (no shunt in the power path)
+d.add("TP", "Connector:TestPoint", "BAT+", PADBIG, {"1": "VBAT"},
       note="also solder the low-ESR bulk electrolytic (35V, 470-1000uF) across BAT+/BAT- - mandatory")
 d.add("TP", "Connector:TestPoint", "BAT-", PADBIG, {"1": GND})
-# 0.5 mOhm high-side shunt -> INA198 (100 V/V) -> 50 mV/A, 3.3 V = 66 A
-d.add("R", "Device:R", "0.5m", "Resistor_SMD:R_2512_6332Metric", {"1": "VBAT_IN", "2": "VBAT"},
-      mpn="2512 0.5mOhm 3W shunt")
-d.add("U", "Amplifier_Current:INA198", "INA198", "Package_TO_SOT_SMD:SOT-23-5",
-      {"4": "VBAT_IN", "5": "VBAT", "3": "+3V3_1", "2": GND, "1": "CURR"}, mpn="INA198AIDBVR")
-d.C("100nF", "+3V3_1", GND)
-d.C("1nF", "CURR", GND, lcsc="", lcsc_ok=False)
 for _ in range(4):
     d.C("10uF", "VBAT", GND, size="1206", volt="50V", lcsc="", lcsc_ok=False)
-d.flag("VBAT_IN"); d.flag(GND)
+d.flag("VBAT"); d.flag(GND)
 
 d.group("Gate drive supply")
 for rail in ("A", "B"):        # A feeds ESC1+2, B feeds ESC3+4
@@ -41,7 +35,7 @@ for rail in ("A", "B"):        # A feeds ESC1+2, B feeds ESC3+4
 d.group("FC connector")
 d.add("J", "Connector_Generic:Conn_01x08", "FC",
       "Connector_JST:JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal",
-      {"1": "VBAT", "2": GND, "3": "CURR", "4": "TLM", "5": "SIG1", "6": "SIG2", "7": "SIG3", "8": "SIG4"},
+      {"1": "VBAT", "2": GND, "4": "TLM", "5": "SIG1", "6": "SIG2", "7": "SIG3", "8": "SIG4"},
       mpn="SM08B-SRSS-TB")
 d.add("TP", "Connector:TestPoint", "TLM", "TestPoint:TestPoint_Pad_1.0x1.0mm", {"1": "TLM"},
       note="not driven; AM32 RPM telemetry uses bidirectional DShot on SIGn")
@@ -54,13 +48,13 @@ for n in (1, 2, 3, 4):
     d.group("ESC%d MCU" % n)
     d.add("U", "MCU_ST_STM32G0:STM32G071K8UxN", "STM32G071K8U6N",
           "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.45x3.45mm",
-          {"VDD": v33, "VSS": GND, "PF2": p + "NRST",
+          {"VDD": v33, "VSS": GND,
            "PA10/UCPD1_DBCC2": p + "HA", "PA9/UCPD1_DBCC1": p + "HB", "PA8": p + "HC",
            "PB15": p + "LA", "PB0": p + "LB", "PA7": p + "LC",
            "PC6": p + "SIG",
            "PA0": p + "BEMF_A", "PA2": p + "BEMF_B", "PB7": p + "BEMF_C",
            "PA1": p + "NEUTRAL", "PA3": p + "NEUTRAL",
-           "PA4": p + "ISENSE", "PA5": p + "VSENSE",
+           "PA4": GND, "PA5": p + "VSENSE",              # PA4 = current ADC: no sensor, tied low
            "PA13": p + "SWDIO", "PA14": p + "SWCLK"},
           mpn="STM32G071K8U6N", note="AM32 target JUPITER_80_G071 pinout")
     d.add("U", "Regulator_Linear:MCP1703Ax-330xxTT", "MCP1703-3.3", "Package_TO_SOT_SMD:SOT-23",
@@ -68,9 +62,7 @@ for n in (1, 2, 3, 4):
     d.C("1uF", rail, GND, size="0603", volt="25V", lcsc="", lcsc_ok=False)
     d.C("1uF", v33, GND)
     d.C("100nF", v33, GND)
-    d.C("100nF", p + "NRST", GND)
     d.R("100", "SIG%d" % n, p + "SIG")
-    d.R("10k", p + "ISENSE", GND)                                # no per-ESC current sensor
     d.R("27.4k", "VBAT", p + "VSENSE"); d.R("1k", p + "VSENSE", GND)   # x28.4 (target 28.5)
     d.add("TP", "Connector:TestPoint", "DIO%d" % n, "TestPoint:TestPoint_Pad_1.0x1.0mm", {"1": p + "SWDIO"})
     d.add("TP", "Connector:TestPoint", "CLK%d" % n, "TestPoint:TestPoint_Pad_1.0x1.0mm", {"1": p + "SWCLK"})
@@ -81,12 +73,10 @@ for n in (1, 2, 3, 4):
         P_ = p + "PH_" + ph
         d.add("U", "Driver_FET:LM2105DSG", "LM2105", "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm",
               {"1": rail, "4": GND, "9": GND, "2": p + "H" + ph, "3": p + "L" + ph,
-               "8": p + "BST_" + ph, "6": P_, "7": p + "GHO_" + ph, "5": p + "GLO_" + ph},
+               "8": p + "BST_" + ph, "6": P_, "7": p + "GH_" + ph, "5": p + "GL_" + ph},
               mpn="LM2105DSGR")
         d.C("1uF", rail, GND, size="0603", volt="25V", lcsc="", lcsc_ok=False)
         d.C("220nF", p + "BST_" + ph, P_, lcsc="", lcsc_ok=False)
-        d.R("4.7", p + "GHO_" + ph, p + "GH_" + ph)
-        d.R("4.7", p + "GLO_" + ph, p + "GL_" + ph)
         d.add("Q", FET, "CSD18543Q3A", FET_FP, {"5": "VBAT", "1": P_, "2": P_, "3": P_, "4": p + "GH_" + ph},
               mpn="CSD18543Q3A", note="high side")
         d.add("Q", FET, "CSD18543Q3A", FET_FP, {"5": P_, "1": GND, "2": GND, "3": GND, "4": p + "GL_" + ph},

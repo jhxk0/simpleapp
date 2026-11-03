@@ -7,6 +7,7 @@ L = importlib.import_module(name + "_layout")
 d = os.path.join(HERE, "..", name); path = os.path.join(d, name + ".kicad_pcb")
 board = pcbnew.LoadBoard(path)
 MM = pcbnew.FromMM
+CU_LAYERS = [pcbnew.F_Cu, pcbnew.B_Cu] + [getattr(pcbnew, 'In%d_Cu' % i) for i in range(1, board.GetCopperLayerCount() - 1)]
 
 # PLANES entries: (layer, net) for a full plane, or (layer, net, hole_pts) for a plane with a routable hole
 PLANES = [tuple(p) + (None,) * (3 - len(p)) for p in L.PLANES]
@@ -84,7 +85,7 @@ if stage == "fanout":
         t = pcbnew.PCB_TRACK(board); t.SetStart(c); t.SetEnd(best); t.SetWidth(MM(0.25)); t.SetLayer(lay)
         t.SetNet(pad.GetNet()); t.SetLocked(True); board.Add(t)
         v = pcbnew.PCB_VIA(board); v.SetPosition(best); v.SetDrill(MM(0.3))
-        for L_ in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
+        for L_ in CU_LAYERS:
             v.SetWidth(L_, MM(0.5))
         v.SetNet(pad.GetNet()); v.SetLocked(True); board.Add(v)
         obst += [t, v]; holes.append(best); done += 1
@@ -179,13 +180,13 @@ if stage == "finish":
                 for it, nc in others:
                     if nc == gnd.GetNetCode() and it.Type() != pcbnew.PCB_VIA_T:
                         continue
-                    for L_ in (pcbnew.F_Cu, pcbnew.B_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu):
+                    for L_ in CU_LAYERS:
                         if it.IsOnLayer(L_) and it.GetEffectiveShape(L_).Collide(circ, CL if nc != gnd.GetNetCode() else MM(0.3)):
                             ok = False; break
                     if not ok: break
             if ok:
                 v = pcbnew.PCB_VIA(board); v.SetPosition(pt); v.SetDrill(MM(0.3))
-                for L_ in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
+                for L_ in CU_LAYERS:
                     v.SetWidth(L_, MM(0.5))
                 v.SetNet(gnd); board.Add(v); others.append((v, gnd.GetNetCode())); drills.append(pt); added += 1
             x += step
@@ -201,7 +202,7 @@ if stage == "finish":
         for it, nc in others:
             if nc == gnd.GetNetCode() and it.Type() != pcbnew.PCB_VIA_T:
                 continue
-            for L_ in (pcbnew.F_Cu, pcbnew.B_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu):
+            for L_ in CU_LAYERS:
                 if it.IsOnLayer(L_) and it.GetEffectiveShape(L_).Collide(circ, CL if nc != gnd.GetNetCode() else MM(0.25)):
                     return False
         return True
@@ -225,7 +226,7 @@ if stage == "finish":
                     pt = pcbnew.VECTOR2I(int(x), int(y))
                     if o.PointInside(pt) and o.SquaredDistance(pt) >= r * r and fits_via(pt, r):
                         v = pcbnew.PCB_VIA(board); v.SetPosition(pt); v.SetDrill(MM(0.25))
-                        for L_ in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
+                        for L_ in CU_LAYERS:
                             v.SetWidth(L_, MM(0.45))
                         v.SetNet(gnd); board.Add(v); others.append((v, gnd.GetNetCode())); drills.append(pt)
                         fixed_islands += 1; done = True
@@ -257,7 +258,7 @@ if stage == "finish":
                         t = pcbnew.PCB_TRACK(board); t.SetStart(c); t.SetEnd(best); t.SetWidth(MM(0.25))
                         t.SetLayer(lay); t.SetNet(gnd); board.Add(t); others.append((t, gnd.GetNetCode()))
                         v = pcbnew.PCB_VIA(board); v.SetPosition(best); v.SetDrill(MM(0.25))
-                        for L_ in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
+                        for L_ in CU_LAYERS:
                             v.SetWidth(L_, MM(0.45))
                         v.SetNet(gnd); board.Add(v); others.append((v, gnd.GetNetCode())); drills.append(best)
                         fixed_islands += 1; done = True; break

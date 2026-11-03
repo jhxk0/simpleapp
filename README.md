@@ -5,11 +5,11 @@ Two KiCad 9 boards for a 5" quad, 30.5 x 30.5 mm M3 mounting.
 | Board | Size | Layers | Key parts |
 |---|---|---|---|
 | `fc/`  flight controller | 36 x 36 mm | 4 (1 oz) | STM32F405RGT6, ICM-42688-P, BMP280, W25Q128 16 MB, LMR33630 5 V/3 A buck, USB-C |
-| `esc/` 4-in-1 ESC | 44 x 44 mm | — | 4x STM32G071K8U6N (AM32), 12x LM2105, 24x CSD18543Q3A 60 V, INA198 current sense |
+| `esc/` 4-in-1 ESC (rev B) | 44 x 44 mm | 6 (2 oz outer, >=1 oz inner) | 4x STM32G071K8U6N (AM32), 12x LM2105, 24x CSD18543Q3A 60 V |
 
 **Status:** the FC is complete: ERC clean, DRC clean with schematic parity, and fab files generated.
-The ESC **schematic** is complete and ERC clean, but its **layout is not finished and must not be ordered**.
-See "ESC layout status" below.
+The ESC **schematic** is complete and ERC clean; its **layout is unfinished (placement and power copper
+only, signals not routed) and must not be ordered**. See "ESC layout status" below.
 
 Input: 3-6S LiPo. Both boards are generated from Python sources in `tools/`. Edit `tools/*_design.py`
 (circuit) or `tools/*_layout.py` (placement), then rebuild; don't hand-edit the generated files unless
@@ -24,7 +24,8 @@ fc/fab/fc-gerbers.zip                       Gerbers + drill -> upload to the PCB
 fc/fab/fc-BOM-jlcpcb.csv, fc-CPL-jlcpcb.csv JLCPCB assembly files
 fc/fab/fc-BOM-full.csv                      BOM with MPNs and sourcing status
 fc/drc.json, fc/erc.json                    last DRC / ERC reports
-esc/esc.kicad_sch, esc-schematic.pdf        ESC schematic (complete); esc.kicad_pcb is a WIP placement only
+esc/esc.kicad_sch, esc-schematic.pdf        ESC schematic (complete)
+esc/esc.kicad_pcb                           ESC layout, WIP: placement + power copper + plane fanout, unrouted
 tools/                                      generators (see "Rebuilding")
 ```
 
@@ -35,8 +36,9 @@ tools/                                      generators (see "Rebuilding")
 | Signal | VBAT | GND | CURR | TLM | M1 | M2 | M3 | M4 |
 
 Use a straight-through cable (pin 1 to pin 1). This is *not* guaranteed to match third-party ESCs —
-check before plugging the FC into anything else. CURR scale: 50 mV/A (0.5 mOhm shunt x INA198 gain 100,
-full scale ~66 A). TLM is not driven by this ESC; use bidirectional DShot for RPM telemetry.
+check before plugging the FC into anything else. This ESC has no current sensor: CURR (pin 3) is not
+connected, so disable the current meter in firmware (or use a third-party ESC that provides it).
+TLM is not driven either; use bidirectional DShot for RPM telemetry.
 The SH contacts are rated ~1 A: power a high-draw VTX from the battery pads, not through the FC.
 
 ## Flight controller pinout (STM32F405RGT6) — for your firmware
@@ -86,21 +88,36 @@ bottom), then use the normal AM32 configurator through the FC passthrough. Set d
 parameters in the configurator; the target's `MILLIVOLT_PER_AMP` is irrelevant because per-ESC current
 is not sensed (PA4 is tied low).
 
+Gates are driven directly by the LM2105 (no gate resistors); NRST is left to the internal reset circuit.
+
 Rating: CSD18543Q3A is 60 V / 8.1 mOhm. Treat the board as **~30 A burst / ~20 A continuous per motor
 with airflow**. Fine for typical 5" builds; not for high-kV 6S racing setups.
 
-## ESC layout status (why it is paused)
+## ESC layout status (rev B, unfinished)
 
-A placement exists (power stage on all four edges, MCUs in the corners, battery pads in the centre).
-The current path, though, cannot carry a 4-in-1's current: battery current would reach the edge
-FETs through ~15 vias and 1 oz inner copper (roughly 25-30 A), against 100 A+ bursts with four motors
-at full throttle. Commercial 4-in-1s put the battery pads on an edge next to the FETs and spread VBAT/GND
-over several thick-copper layers (typically 6-8 layers, 2 oz). Finishing the routing on the current
-architecture would produce a board that passes DRC and then overheats in flight. Options:
+Done:
+- 6-layer stack-up: F power stage | In1 GND plane | In2, In3 signals | In4 VBAT plane | B control.
+- Battery pads in the centre feed the GND/VBAT planes through 50 vias each (no shunt in the path).
+- Each edge carries one ESC: three half-bridges with phase pours to the motor pads on F and B,
+  VBAT/GND feed strips with via fields, notched pours with pre-routed high-side gate escapes, and
+  pre-routed phase taps. MCUs sit in the corners on the bottom.
+- Geometry passes DRC (no shorts or clearance errors); only routing is missing.
 
-1. Redo the ESC layout as 6-layer, 2 oz, with edge battery pads (keeps this schematic as-is).
-2. Fly the FC with an off-the-shelf 30.5 mm 4-in-1 ESC. Check its 8-pin pinout against the table
-   below and re-pin the cable if it differs.
+Not done: signal routing. Freerouting completes about 85% and then stalls with ~44 connections left,
+almost all between each LM2105 and its two FETs. The gate traces, the switch-node (SH) link and the
+boot cap all have to pass a 1.6 mm gap between the feed-strip via fields, twelve times over. The phase-tap
+via also sits in the low-side gate's path, and on the outer half-bridges the corner MCUs occupy space
+those links need.
+
+To finish it:
+1. Hand-route one half-bridge's driver-to-FET links (GH, GL, SH, boot cap) as a fixed pattern,
+   moving the phase-tap via out of the low-side gate's path.
+2. Replicate that pattern to the other 11 half-bridges by rotation (`tools/esc_layout.py` already
+   places everything per half-bridge this way), pull the corner MCUs clear of the outer units, then
+   let Freerouting route the rest (`tools/route_until_clean.sh esc`).
+
+Alternatively, route the remaining short driver-to-FET connections by hand in KiCad. The FC also works
+with any off-the-shelf 30.5 mm 4-in-1 ESC (check its 8-pin pinout against the table above).
 
 ## Before you order — verification checklist
 
@@ -112,12 +129,12 @@ JLCPCB/LCSC catalogue). Each is a short check:
    location, pad sizes and the RESV recommendations against the TDK datasheet.
 2. **LCSC part numbers.** `*-BOM-full.csv` marks every line as *recalled* (from memory, likely right),
    *unverified* or *MISSING*. JLCPCB's BOM upload shows the actual match; pick equivalents for the
-   missing lines (mostly 50 V caps, the shunt, ESC silicon).
+   missing lines (mostly 50 V caps and ESC silicon).
 3. **Assembly rotations.** JLCPCB's parts library sometimes uses a different zero-rotation than KiCad
    (QFN, SOT-23, connectors). Check the placement preview at order time and rotate as needed.
 4. **(ESC) Gate-drive LDO margin.** L78L10 is rated 30 V input; 6S is 25.2 V. The 22 R + 1 uF filter helps,
    but a **low-ESR electrolytic (35 V, 470–1000 uF) across the battery pads is mandatory**.
-6. **First power-up.** Use a current-limited supply (or smoke stopper), no props, one board at a time.
+5. **First power-up.** Use a current-limited supply (or smoke stopper), no props, one board at a time.
 
 ## Ordering (JLCPCB)
 

@@ -15,7 +15,8 @@ def k9(*args):
     if r.returncode:
         print(r.stdout, r.stderr); raise SystemExit(1)
 
-layers = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts"
+nlay = importlib.import_module(b + "_layout").LAYERS
+layers = "F.Cu," + "".join("In%d.Cu," % i for i in range(1, nlay - 1)) + "B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts"
 k9("pcb", "export", "gerbers", "--layers", layers, "--subtract-soldermask", "--no-x2", "-o", g + "/", pcb)
 k9("pcb", "export", "drill", "--format", "excellon", "--excellon-separate-th", "--generate-map",
    "--map-format", "gerberx2", "-o", g + "/", pcb)

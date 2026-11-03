@@ -1,13 +1,106 @@
 {
     "$schema": "https://schemas.kicad.org/erc.v1.json",
     "coordinate_units": "mm",
-    "date": "2026-11-03T13:24:24+0000",
+    "date": "2026-11-03T17:22:20+0000",
     "kicad_version": "9.0.3",
     "sheets": [
         {
             "path": "/",
-            "uuid_path": "/2d5fd8d9-32e0-4698-a374-aa966417f0d8",
-            "violations": []
+            "uuid_path": "/70da106d-4da9-4816-ae28-a56eb0b516de",
+            "violations": [
+                {
+                    "description": "Pins of type Bidirectional and Power output are connected",
+                    "items": [
+                        {
+                            "description": "Symbol U3 Pin 11 [PA4, Bidirectional, Line]",
+                            "pos": {
+                                "x": 1.016,
+                                "y": 2.6924
+                            },
+                            "uuid": "59d2041f-6a62-4def-963e-1d2c1528cb80"
+                        },
+                        {
+                            "description": "Symbol #FLG02 Pin 1 [Power output, Line]",
+                            "pos": {
+                                "x": 7.366,
+                                "y": 5.334
+                            },
+                            "uuid": "82de1b4d-d195-4d14-837e-dad0fe7155a6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "pin_to_pin"
+                },
+                {
+                    "description": "Pins of type Bidirectional and Power output are connected",
+                    "items": [
+                        {
+                            "description": "Symbol U8 Pin 11 [PA4, Bidirectional, Line]",
+                            "pos": {
+                                "x": 2.5908,
+                                "y": 4.6228
+                            },
+                            "uuid": "bc4068ca-e4c1-401c-84d9-229adee5eec6"
+                        },
+                        {
+                            "description": "Symbol #FLG02 Pin 1 [Power output, Line]",
+                            "pos": {
+                                "x": 7.366,
+                                "y": 5.334
+                            },
+                            "uuid": "82de1b4d-d195-4d14-837e-dad0fe7155a6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "pin_to_pin"
+                },
+                {
+                    "description": "Pins of type Bidirectional and Power output are connected",
+                    "items": [
+                        {
+                            "description": "Symbol U13 Pin 11 [PA4, Bidirectional, Line]",
+                            "pos": {
+                                "x": 4.1656,
+                                "y": 4.6228
+                            },
+                            "uuid": "90812266-7d5a-45c8-86a1-4d0b02bef4a3"
+                        },
+                        {
+                            "description": "Symbol #FLG02 Pin 1 [Power output, Line]",
+                            "pos": {
+                                "x": 7.366,
+                                "y": 5.334
+                            },
+                            "uuid": "82de1b4d-d195-4d14-837e-dad0fe7155a6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "pin_to_pin"
+                },
+                {
+                    "description": "Pins of type Bidirectional and Power output are connected",
+                    "items": [
+                        {
+                            "description": "Symbol U18 Pin 11 [PA4, Bidirectional, Line]",
+                            "pos": {
+                                "x": 5.715,
+                                "y": 4.6228
+                            },
+                            "uuid": "e83cd90d-f14d-46bf-99ae-f61f001aa431"
+                        },
+                        {
+                            "description": "Symbol #FLG02 Pin 1 [Power output, Line]",
+                            "pos": {
+                                "x": 7.366,
+                                "y": 5.334
+                            },
+                            "uuid": "82de1b4d-d195-4d14-837e-dad0fe7155a6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "pin_to_pin"
+                }
+            ]
         }
     ],
     "source": "esc.kicad_sch"

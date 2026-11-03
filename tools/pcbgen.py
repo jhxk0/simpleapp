@@ -32,6 +32,7 @@ if os.path.exists(pcb_path):
     os.remove(pcb_path)
 board = pcbnew.NewBoard(pcb_path)
 board.SetCopperLayerCount(L.LAYERS)
+CU_LAYERS = [pcbnew.F_Cu, pcbnew.B_Cu] + [getattr(pcbnew, 'In%d_Cu' % i) for i in range(1, L.LAYERS - 1)]
 ds = board.GetDesignSettings()
 for k, v in L.RULES.items():
     setattr(ds, k, MM(v))
@@ -239,7 +240,7 @@ for layer, netname, pts, prio in getattr(L, "ZONES", []):
 for (x, y), netname in getattr(L, "VIAS", []):
     v = pcbnew.PCB_VIA(board)
     v.SetPosition(P(x, y)); v.SetDrill(MM(0.3))
-    for L_ in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
+    for L_ in CU_LAYERS:
         v.SetWidth(L_, MM(0.6))
     v.SetNet(nets[netname]); v.SetLocked(True)
     board.Add(v)
