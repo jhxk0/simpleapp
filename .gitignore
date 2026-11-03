@@ -1,0 +1,21 @@
+# third-party reference downloads (AM32 sources, used only to check pinouts)
+ref/
+# routing intermediates and logs
+*.dsn
+*.ses
+*.ses.keep
+*.fanout.kicad_pcb
+*.clean.kicad_pcb
+fr*.log
+route_run.log
+# KiCad local state / backups
+*.kicad_prl
+*-backups/
+fp-info-cache
+_autosave-*
+# generated scratch
+__pycache__/
+*/renders/place*
+*/renders/routed*
+*/renders/*.svg
+*/fab/gerbers/

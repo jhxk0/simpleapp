@@ -1,0 +1,41 @@
+Qty,Designators,Value,MPN / spec,Footprint,LCSC,LCSC status,Notes
+1,U1,STM32F405RGT6,STM32F405RGT6,LQFP-64_10x10mm_P0.5mm,C15742,recalled - confirm in JLC BOM tool,
+13,C1 C2 C3 C4 C7 C10 C16 C24 C25 C26 C27 C29 C30,100nF,0402 100nF  X5R/X7R,C_0402_1005Metric,C1525,recalled - confirm in JLC BOM tool,
+1,C5,4.7uF,0603 4.7uF  X5R/X7R,C_0603_1608Metric,C19666,recalled - confirm in JLC BOM tool,
+1,FB1,600R@100MHz,BLM15AG601SN1D,L_0402_1005Metric,,MISSING - pick an equivalent,
+6,C6 C17 C20 C21 C22 C23,1uF,0402 1uF  X5R/X7R,C_0402_1005Metric,C52923,recalled - confirm in JLC BOM tool,
+3,C8 C9 C28,2.2uF,0402 2.2uF  X5R/X7R,C_0402_1005Metric,C12530,recalled - confirm in JLC BOM tool,
+8,R1 R2 R8 R11 R17 R18 R19 R23,10k,0402 10k 1%,R_0402_1005Metric,C25744,recalled - confirm in JLC BOM tool,
+1,SW1,BOOT,KMR211NGLFS,SW_Push_1P1T_NO_CK_KMR2,,MISSING - pick an equivalent,
+1,Y1,8MHz,"X322508MSB4SI (8MHz, 20pF CL)",Crystal_SMD_3225-4Pin_3.2x2.5mm,C9002,unverified,load caps sized for CL=20pF
+2,C11 C12,33pF,0402 33pF  X5R/X7R,C_0402_1005Metric,C1562,recalled - confirm in JLC BOM tool,
+1,U2,LMR33630BDDA,LMR33630BDDAR,Texas_HSOP-8-1EP_3.9x4.9mm_P1.27mm_ThermalVias,,MISSING - pick an equivalent,PG unused
+2,C13 C14,10uF 50V,1206 10uF 50V X5R/X7R,C_1206_3216Metric,,MISSING - pick an equivalent,
+1,C15,100nF 50V,0603 100nF 50V X5R/X7R,C_0603_1608Metric,,MISSING - pick an equivalent,
+2,R3 R5,100k,0402 100k 1%,R_0402_1005Metric,C25741,recalled - confirm in JLC BOM tool,
+1,R4,27k,0402 27k 1%,R_0402_1005Metric,C25771,recalled - confirm in JLC BOM tool,
+1,L1,4.7uH,SRN4018-4R7M (Isat 2.5A),L_Bourns-SRN4018,,MISSING - pick an equivalent,
+1,R6,24.9k,0402 24.9k 1%,R_0402_1005Metric,,MISSING - pick an equivalent,
+2,C18 C19,22uF 10V,0805 22uF 10V X5R/X7R,C_0805_2012Metric,C45783,recalled - confirm in JLC BOM tool,
+2,U3 U4,AP2112K-3.3,AP2112K-3.3TRG1,SOT-23-5,C51118,recalled - confirm in JLC BOM tool,dedicated IMU supply
+1,D1,RED,0603 red,LED_0603_1608Metric,C2286,recalled - confirm in JLC BOM tool,
+1,R7,1.5k,0402 1.5k 1%,R_0402_1005Metric,C25867,recalled - confirm in JLC BOM tool,
+4,R9 R10 R20 R21,1k,0402 1k 1%,R_0402_1005Metric,C11702,recalled - confirm in JLC BOM tool,
+1,R12,20k,0402 20k 1%,R_0402_1005Metric,C25765,recalled - confirm in JLC BOM tool,
+1,J1,USB-C,TYPE-C-31-M-12,USB_C_Receptacle_HRO_TYPE-C-31-M-12,C165948,recalled - confirm in JLC BOM tool,
+2,R13 R14,5.1k,0402 5.1k 1%,R_0402_1005Metric,C25905,recalled - confirm in JLC BOM tool,
+1,U5,USBLC6-2SC6,USBLC6-2SC6,SOT-23-6,C7519,recalled - confirm in JLC BOM tool,
+2,D2 D5,B5819W,B5819W,D_SOD-123,C8598,recalled - confirm in JLC BOM tool,USB powers 5V rail; blocks backfeed; buzzer flyback
+1,U6,ICM-42688-P,ICM-42688-P,LGA-14_3x2.5mm_P0.5mm_LayoutBorder3x4y,C1850418,recalled - confirm in JLC BOM tool,verify footprint pin-1 vs datasheet
+1,U7,BMP280,BMP280,Bosch_LGA-8_2x2.5mm_P0.65mm_ClockwisePinNumbering,C83291,recalled - confirm in JLC BOM tool,I2C addr 0x76
+2,R15 R16,2.2k,0402 2.2k 1%,R_0402_1005Metric,C25879,recalled - confirm in JLC BOM tool,
+1,U8,W25Q128JVSIQ,W25Q128JVSIQ,SOIC-8_5.3x5.3mm_P1.27mm,C97521,recalled - confirm in JLC BOM tool,
+1,D3,BLUE,0603 blue,LED_0603_1608Metric,C72041,recalled - confirm in JLC BOM tool,
+1,D4,GREEN,0603 green,LED_0603_1608Metric,C72043,recalled - confirm in JLC BOM tool,
+1,Q1,AO3400A,AO3400A,SOT-23,C20917,recalled - confirm in JLC BOM tool,
+1,R22,100,0402 100 1%,R_0402_1005Metric,C25076,recalled - confirm in JLC BOM tool,
+1,R24,33,0402 33 1%,R_0402_1005Metric,C25105,recalled - confirm in JLC BOM tool,
+1,J2,ESC,SM08B-SRSS-TB,JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal,,MISSING - pick an equivalent,
+1,J3,RX,SM04B-SRSS-TB,JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal,,MISSING - pick an equivalent,
+1,J4,GPS,SM06B-SRSS-TB,JST_SH_SM06B-SRSS-TB_1x06-1MP_P1.00mm_Horizontal,,MISSING - pick an equivalent,
+1,J5,VTX,SM06B-SRSS-TB,JST_SH_SM06B-SRSS-TB_1x06-1MP_P1.00mm_Horizontal,,MISSING - pick an equivalent,

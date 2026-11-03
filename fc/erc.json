@@ -1,0 +1,38 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-03T14:20:02+0000",
+    "kicad_version": "9.0.3",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/d1602bff-42fc-4162-a150-cff3f51592d5",
+            "violations": [
+                {
+                    "description": "Pins of type Bidirectional and Power output are connected",
+                    "items": [
+                        {
+                            "description": "Symbol U7 Pin 5 [SDO, Bidirectional, Line]",
+                            "pos": {
+                                "x": 2.0828,
+                                "y": 2.7686
+                            },
+                            "uuid": "37ed4f6c-6b68-4995-9cb1-3321bd81ea36"
+                        },
+                        {
+                            "description": "Symbol #FLG04 Pin 1 [Power output, Line]",
+                            "pos": {
+                                "x": 7.6708,
+                                "y": 5.334
+                            },
+                            "uuid": "3cebfcbe-a910-4796-ad7b-e92a0d784c1f"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "pin_to_pin"
+                }
+            ]
+        }
+    ],
+    "source": "fc.kicad_sch"
+}
