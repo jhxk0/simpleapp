@@ -1,0 +1,66 @@
+# FreeCAD macro: load the house model built by build_model.py.
+#
+# In FreeCAD: Macro > Macros... > "User macros location" -> pick this folder
+# (or use the folder button to browse here), select freecad_import.FCMacro, Execute.
+# It reads output/freecad_parts/*.obj, colours each part and saves output/house.FCStd.
+import json
+import os
+
+import FreeCAD as App
+import Mesh
+
+try:
+    here = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    here = ""
+parts_dir = os.path.join(here, "output", "freecad_parts")
+
+if not os.path.isdir(parts_dir) and App.GuiUp:
+    from PySide import QtGui
+    parts_dir = QtGui.QFileDialog.getExistingDirectory(
+        None, "Select the floorplan3d/output/freecad_parts folder")
+
+if not parts_dir or not os.path.isdir(parts_dir):
+    raise RuntimeError("Could not find output/freecad_parts next to this macro")
+
+with open(os.path.join(parts_dir, "colors.json")) as f:
+    colors = json.load(f)
+
+doc = App.newDocument("House")
+scale = App.Matrix()
+scale.scale(1000, 1000, 1000)  # model is in metres, FreeCAD works in millimetres
+
+group = doc.addObject("App::DocumentObjectGroup", "House")
+for name in sorted(colors):
+    if name == "ground":  # 200 m plane; replaced by a smaller one below
+        continue
+    path = os.path.join(parts_dir, name + ".obj")
+    if not os.path.exists(path):
+        continue
+    mesh = Mesh.Mesh(path)
+    mesh.transform(scale)
+    obj = doc.addObject("Mesh::Feature", name.capitalize())
+    obj.Mesh = mesh
+    group.addObject(obj)
+    if App.GuiUp:
+        r, g, b = (c / 255.0 for c in colors[name])
+        obj.ViewObject.ShapeColor = (r, g, b)
+        if name == "glass":
+            obj.ViewObject.Transparency = 60
+
+ground = doc.addObject("Part::Box", "Ground")
+ground.Length = ground.Width = 40000
+ground.Height = 50
+ground.Placement.Base = App.Vector(-20000, -20000, -50)
+if App.GuiUp:
+    ground.ViewObject.ShapeColor = (0.47, 0.59, 0.35)
+
+doc.recompute()
+out = os.path.join(os.path.dirname(parts_dir), "house.FCStd")
+doc.saveAs(out)
+App.Console.PrintMessage("Saved %s\n" % out)
+
+if App.GuiUp:
+    import FreeCADGui as Gui
+    Gui.activeDocument().activeView().viewIsometric()
+    Gui.SendMsgToActiveView("ViewFit")
