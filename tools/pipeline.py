@@ -43,6 +43,7 @@ def route(b, passes=100, tries=3):
     shutil.copy(pcb, fan)
     fr = kienv.freerouting()
     try:
+        scores = []
         for t in range(1, tries + 1):
             print("--- attempt", t)
             shutil.copy(fan, pcb)
@@ -59,18 +60,40 @@ def route(b, passes=100, tries=3):
             if run([sys.executable, "drc.py", b, "20"], show=25) == 0:
                 print("CLEAN on attempt", t)
                 return
-            # finish what Freerouting left open with the grid router: own copper first, then neighbours
-            for mode in ([], ["--near"], ["--near"]):
+            # finish what Freerouting left open with the grid router; keep a round only if it helps
+            best = errors(d)
+            for mode in ([], ["--near"]):
+                shutil.copy(pcb, pcb + ".before")
                 kpy("finish_route.py", b, os.path.join(d, "drc.json"), *mode, show=2)
                 kpy("route.py", b, "finish", show=2)
-                if run([sys.executable, "drc.py", b, "20"], show=25) == 0:
+                rc = run([sys.executable, "drc.py", b, "20"], show=1)
+                if rc == 0:
                     print("CLEAN on attempt", t, "after finish_route", " ".join(mode))
                     return
+                if errors(d) >= best:
+                    print("  finish_route %s did not help (%d >= %d) - reverted" % (" ".join(mode), errors(d), best))
+                    shutil.copy(pcb + ".before", pcb)
+                    run([sys.executable, "drc.py", b, "20"], show=0)
+                else:
+                    best = errors(d)
+                    print("  finish_route %s: %d errors" % (" ".join(mode), best))
+            if os.path.exists(pcb + ".before"):
+                os.remove(pcb + ".before")
             shutil.copy(pcb, os.path.join(d, "%s.attempt%d.kicad_pcb" % (b, t)))   # keep for inspection
-        sys.exit("still not clean after %d attempts - see drc.json and %s.attempt*.kicad_pcb" % (tries, b))
+            scores.append((errors(d), t))
+        e, t = min(scores)
+        shutil.copy(os.path.join(d, "%s.attempt%d.kicad_pcb" % (b, t)), pcb)        # keep the best attempt
+        run([sys.executable, "drc.py", b, "20"], show=0)
+        sys.exit("not clean after %d attempts; kept attempt %d with %d DRC errors (see drc.json)" % (tries, t, e))
     finally:
         if os.path.exists(fan):
             os.remove(fan)
+
+def errors(d):
+    import json
+    r = json.load(open(os.path.join(d, "drc.json")))
+    return sum(1 for k in ("violations", "unconnected_items", "schematic_parity") for v in r.get(k, [])
+               if v["severity"] == "error")
 
 def fab(b):
     if run([sys.executable, "fab.py", b], show=3):

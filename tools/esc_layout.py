@@ -51,7 +51,7 @@ def first(g, prefix, val=None):
     return [p.ref for p in grp(g) if p.ref.startswith(prefix) and (val is None or p.value == val)]
 
 FIXED, ZONES, VIAS, TRACKS, NEAR, SIDE, SILK = {}, [], [], [], {}, {}, []
-POWER_BANDS, POWER_BANDS_B, TAP_KEEPOUTS, DRV_KEEPOUTS, NO_TRACKS = [], [], [], [], []
+POWER_BANDS, POWER_BANDS_B, TAP_KEEPOUTS, DRV_KEEPOUTS, NO_TRACKS, MCU_FIRST = [], [], [], [], [], []
 for hx, hy in HOLES:
     pass
 for i, h in enumerate(first("Mechanical", "H")):
@@ -133,7 +133,7 @@ for n in range(1, 5):
         # its output leaves through the bottom channel between the VBAT and GND via fields.  The 10k
         # neutral resistors (rn) are auto-placed next to the MCU.
         rb, r2k, rn = [p.ref for p in blk[6:9]]
-        NEAR[rn] = mcu[0] + ".10"                 # 10k neutral resistors sit at the MCU's PA1
+        NEAR[rn] = mcu[0] + "." + {"A": "7", "B": "9", "C": "31"}[ph]   # 10k at its BEMF pin
         YR = Y_FET - 0.85
         put(rb, xu + 0.4, YR, 90, "B")
         put(r2k, xu + 1.45, YR, 270, "B")
@@ -167,6 +167,13 @@ for n in range(1, 5):
     # MCU on the bottom between the driver row and the battery via arrays, clear of the driver vias
     mx, my = rot(5.2, 8.0, phi)
     FIXED[mcu[0]] = (mx, my, phi, "B")
+    # MCU support parts anchored to the pin each one serves (group order: MCU, LDO, C rail, C 1u,
+    # C 100n, R 100 (SIG), R 27.4k, R 1k, TP DIO, TP CLK, TP 3V3)
+    g = [p.ref for p in grp("ESC%d MCU" % n)]
+    u = mcu[0]
+    NEAR.update({g[4]: u + ".4", g[3]: u + ".4", g[1]: u + ".4", g[5]: u + ".20",
+                 g[7]: u + ".12", g[6]: u + ".12", g[8]: u + ".24", g[9]: u + ".25", g[10]: u + ".4"})
+    MCU_FIRST += [g[4], g[3], g[5], g[7], g[6], g[1], g[2], g[8], g[9], g[10]]
     # no other parts over this edge's power band (FETs, feed strips, via fields, phase pours)
     def kbox(x0, y0, x1, y1):
         bx = [rot(x, y, phi) for x, y in ((x0, y0), (x1, y1))]
@@ -194,7 +201,7 @@ SIDE = {}
 for p in parts:
     if p.ref not in FIXED:
         SIDE[p.ref] = "B"            # small parts default to the bottom
-ORDER = first("Gate drive supply", "U") + [first("ESC%d MCU" % n, "U")[1] for n in range(1, 5)]
+ORDER = first("Gate drive supply", "U") + [r for r in NEAR if r not in MCU_FIRST] + MCU_FIRST
 ANCHOR_SKIP = ["/GND", "/VBAT", "GND", "VBAT"]
 # 6 layers: F power stage | In1 GND plane | In2 signal | In3 signal | In4 VBAT plane | B control.
 # Order 2 oz outer copper and at least 1 oz inner copper.

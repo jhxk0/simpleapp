@@ -9,7 +9,7 @@ Two KiCad 9 boards for a 5" quad, 30.5 x 30.5 mm M3 mounting.
 
 **Status:** the FC is complete: ERC clean, DRC clean with schematic parity, and fab files generated.
 The ESC **schematic** is complete and ERC clean. Its **layout is about 95 % routed and DRC-clean apart from
-38 open signal connections**, so it **must not be ordered yet**. See "ESC layout status" below.
+29 open signal connections**, so it **must not be ordered yet**. See "ESC layout status" below.
 
 Input: 3-6S LiPo. Both boards are generated from Python sources in `tools/`. Edit `tools/*_design.py`
 (circuit) or `tools/*_layout.py` (placement), then rebuild; don't hand-edit the generated files unless
@@ -25,7 +25,7 @@ fc/fab/fc-BOM-jlcpcb.csv, fc-CPL-jlcpcb.csv JLCPCB assembly files
 fc/fab/fc-BOM-full.csv                      BOM with MPNs and sourcing status
 fc/drc.json, fc/erc.json                    last DRC / ERC reports
 esc/esc.kicad_sch, esc-schematic.pdf        ESC schematic (complete)
-esc/esc.kicad_pcb                           ESC layout, WIP: fully placed, power + gate drive done, 38 signal links open
+esc/esc.kicad_pcb                           ESC layout, WIP: fully placed, power + gate drive done, 29 signal links open
 tools/                                      generators (see "Rebuilding")
 ```
 
@@ -110,8 +110,8 @@ Rev C reworks the layout so the power stage routes deterministically:
   neutral is formed at each MCU from the divided signals (3 x 10k), so no neutral wiring runs along the edges.
 - "No tracks" rule areas keep routing out of the phase pours and feed strips.
 
-Not done: **38 open connections on the MCU side** (neutral, SIG, PWM, SWD, 3.3 V, a few supplies),
-mostly around the four MCUs on the bottom. Freerouting gets to ~35; the extra grid router
+Not done: **29 open connections on the MCU side** (neutral, PWM, SIG, voltage sense, 3.3 V, a few supplies),
+mostly around the four MCUs on the bottom. Freerouting gets to ~29 after the MCU support parts were anchored to their pins; the extra grid router
 (`tools/finish_route.py`) pre-routes the long PWM/BEMF lines but does not close the rest. The inner
 layers still have plenty of free space, so these are ordinary short links. Two ways to finish:
 
