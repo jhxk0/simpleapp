@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import kienv
 b = sys.argv[1]
 d = os.path.abspath(os.path.join(HERE, "..", b))
 pcb = os.path.join(d, b + ".kicad_pcb")
@@ -11,7 +12,7 @@ out = os.path.join(d, "fab"); shutil.rmtree(out, ignore_errors=True); os.makedir
 g = os.path.join(out, "gerbers"); os.makedirs(g)
 
 def k9(*args):
-    r = subprocess.run(["k9", "kicad-cli"] + list(args), capture_output=True, text=True, cwd=d)
+    r = subprocess.run(kienv.kicad_cli() + list(args), capture_output=True, text=True, cwd=d)
     if r.returncode:
         print(r.stdout, r.stderr); raise SystemExit(1)
 

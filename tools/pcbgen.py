@@ -1,6 +1,6 @@
-"""Build a KiCad 9 board from the schematic netlist + a placement table.  Run inside the k9 chroot.
+"""Build a KiCad 9 board from the schematic netlist + a placement table.  Needs KiCad's pcbnew module.
 
-Usage: k9 python3 pcbgen.py <board>     (expects ../<board>/<board>.net.xml and <board>_layout.py)
+Usage: <kicad python> pcbgen.py <board>     (expects ../<board>/<board>.net.xml and <board>_layout.py)
 """
 import sys, os, math, importlib, json
 import xml.etree.ElementTree as ET
@@ -8,7 +8,8 @@ import pcbnew
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-FPDIR = "/usr/share/kicad/footprints"
+import kienv
+FPDIR = kienv.footprint_dir()
 MM = pcbnew.FromMM
 def P(x, y): return pcbnew.VECTOR2I(MM(x), MM(y))
 
@@ -235,13 +236,24 @@ for layer, netname, pts, prio in getattr(L, "ZONES", []):
     z.SetZoneName("fixed")
     z.SetLocalClearance(MM(0.2)); z.SetMinThickness(MM(0.2))
     z.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
-    z.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_NEVER)
+    z.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)   # drop slivers cut off by routing
     board.Add(z)
-for (x, y), netname in getattr(L, "VIAS", []):
+for layer, pts in getattr(L, "NO_TRACKS", []):   # rule areas: no tracks (vias, pads, pours allowed)
+    z = pcbnew.ZONE(board)
+    z.SetLayer(getattr(pcbnew, layer))
+    o = z.Outline(); o.NewOutline()
+    for x, y in pts:
+        o.Append(MM(x), MM(y))
+    z.SetIsRuleArea(True); z.SetDoNotAllowTracks(True); z.SetDoNotAllowVias(False)
+    z.SetDoNotAllowPads(False); z.SetDoNotAllowFootprints(False); z.SetDoNotAllowCopperPour(False)
+    z.SetZoneName("fixed")
+    board.Add(z)
+for via in getattr(L, "VIAS", []):           # ((x, y), net) or ((x, y), net, diameter)
+    (x, y), netname = via[:2]
     v = pcbnew.PCB_VIA(board)
     v.SetPosition(P(x, y)); v.SetDrill(MM(0.3))
     for L_ in CU_LAYERS:
-        v.SetWidth(L_, MM(0.6))
+        v.SetWidth(L_, MM(via[2] if len(via) > 2 else 0.6))
     v.SetNet(nets[netname]); v.SetLocked(True)
     board.Add(v)
 for layer, netname, a, b, w in getattr(L, "TRACKS", []):

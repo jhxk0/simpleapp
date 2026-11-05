@@ -82,10 +82,10 @@ for n in (1, 2, 3, 4):
         d.add("Q", FET, "CSD18543Q3A", FET_FP, {"5": P_, "1": GND, "2": GND, "3": GND, "4": p + "GL_" + ph},
               mpn="CSD18543Q3A", note="low side")
         d.add("TP", "Connector:TestPoint", "M%d%s" % (n, ph), "TestPoint:TestPoint_Pad_2.5x2.5mm", {"1": P_})
-        # back-EMF divider (x0.1) and virtual neutral
+        # back-EMF divider, and the virtual neutral formed from the three divided signals:
+        # BEMF_k - NEUTRAL = (PH_k - mean(PH)) / 11.8  (18k / 2k / 10k), ~2.1 V at 25.2 V
         d.R("18k", P_, p + "BEMF_" + ph); d.R("2k", p + "BEMF_" + ph, GND)
-        d.R("18k", P_, p + "NEUTRAL")
-    d.R("680", p + "NEUTRAL", GND)          # 3x18k || = 6k  -> 680/(6k+680) ~= 0.1 matches phase dividers
+        d.R("10k", p + "BEMF_" + ph, p + "NEUTRAL")
     d.C("10uF", "VBAT", GND, size="1206", volt="50V", lcsc="", lcsc_ok=False)
     d.C("100nF", "VBAT", GND, size="0603", volt="50V", lcsc="", lcsc_ok=False)
 

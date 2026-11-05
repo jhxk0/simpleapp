@@ -2,8 +2,11 @@
 import copy, os, re
 from sexp import parse, find, findall, Sym
 
-SYMDIR = "/opt/q/usr/share/kicad/symbols"
-FPDIR = "/opt/q/usr/share/kicad/footprints"
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kienv
+SYMDIR = kienv.symbol_dir()
+FPDIR = kienv.footprint_dir()
 LOCAL_SYMLIB = {}   # libname -> path, for project libraries
 
 _libcache = {}

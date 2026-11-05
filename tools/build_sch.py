@@ -1,7 +1,7 @@
 """Usage: python3 build_sch.py fc|esc  -> writes ../<board>/<board>.kicad_sch and runs ERC."""
 import sys, os, json, subprocess, importlib
 sys.path.insert(0, os.path.dirname(__file__))
-import kicadlib as K, customlib as CL, schgen
+import kicadlib as K, customlib as CL, schgen, kienv
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 board = sys.argv[1]
@@ -35,7 +35,7 @@ print("parts:", len(D.parts), " nets:", len(set(netmap.values())))
 
 # ERC
 rpt = os.path.join(out, "erc.json")
-subprocess.run(["k9", "kicad-cli", "sch", "erc", "--format", "json", "--severity-all", "-o", rpt, sch],
+subprocess.run(kienv.kicad_cli() + ["sch", "erc", "--format", "json", "--severity-all", "-o", rpt, sch],
                check=True, capture_output=True)
 r = json.load(open(rpt))
 viol = [v for s in r["sheets"] for v in s["violations"]]
@@ -47,7 +47,7 @@ for v in viol[:25]:
 
 # netlist export + cross-check against the design source
 xml = os.path.join(out, board + ".net.xml")
-subprocess.run(["k9", "kicad-cli", "sch", "export", "netlist", "--format", "kicadxml", "-o", xml, sch],
+subprocess.run(kienv.kicad_cli() + ["sch", "export", "netlist", "--format", "kicadxml", "-o", xml, sch],
                check=True, capture_output=True)
 import xml.etree.ElementTree as ET
 t = ET.parse(xml)

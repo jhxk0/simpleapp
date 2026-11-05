@@ -1,8 +1,10 @@
 """drc.py <board>: run KiCad DRC with schematic parity, print a summary."""
 import sys, json, subprocess, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kienv
 from collections import Counter
 b = sys.argv[1]; d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", b)
-subprocess.run(["k9", "kicad-cli", "pcb", "drc", "--format", "json", "--severity-all", "--schematic-parity",
+subprocess.run(kienv.kicad_cli() + ["pcb", "drc", "--format", "json", "--severity-all", "--schematic-parity",
                 "-o", os.path.join(d, "drc.json"), os.path.join(d, b + ".kicad_pcb")], capture_output=True)
 r = json.load(open(os.path.join(d, "drc.json")))
 allv = [(k, v) for k in ("violations", "unconnected_items", "schematic_parity") for v in r.get(k, [])]

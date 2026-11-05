@@ -4,7 +4,7 @@ import sys, os, importlib, pcbnew
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 name, stage = sys.argv[1], sys.argv[2]
 L = importlib.import_module(name + "_layout")
-d = os.path.join(HERE, "..", name); path = os.path.join(d, name + ".kicad_pcb")
+d = os.path.join(HERE, "..", name); path = os.environ.get("BOARD_FILE") or os.path.join(d, name + ".kicad_pcb")
 board = pcbnew.LoadBoard(path)
 MM = pcbnew.FromMM
 CU_LAYERS = [pcbnew.F_Cu, pcbnew.B_Cu] + [getattr(pcbnew, 'In%d_Cu' % i) for i in range(1, board.GetCopperLayerCount() - 1)]
@@ -57,6 +57,17 @@ if stage == "fanout":
            any(t.Type() == pcbnew.PCB_VIA_T and t.GetNetCode() == nc and (t.GetPosition() - c).EuclideanNorm() < MM(1.2)
                for t in board.GetTracks()):
             continue
+        # inside a fixed power zone of its own net (the zone and its via field connect it)?
+        if any(z.GetZoneName() == "fixed" and not z.GetIsRuleArea() and z.GetNetCode() == nc and z.IsOnLayer(lay)
+               and any(z.Outline().Contains(q) for q in (c, pad.GetBoundingBox().GetOrigin(), pad.GetBoundingBox().GetEnd(),
+                       pcbnew.VECTOR2I(pad.GetBoundingBox().GetLeft(), pad.GetBoundingBox().GetBottom()),
+                       pcbnew.VECTOR2I(pad.GetBoundingBox().GetRight(), pad.GetBoundingBox().GetTop())))
+               for z in board.Zones()):
+            continue
+        # already hand-wired (a locked track of its net ends on the pad)?
+        if any(t.Type() != pcbnew.PCB_VIA_T and t.GetNetCode() == nc and t.IsOnLayer(lay) and
+               (pad.HitTest(t.GetStart()) or pad.HitTest(t.GetEnd())) for t in board.GetTracks()):
+            continue
         best = None
         for rr in [MM(0.75 + 0.15 * k) for k in range(10)]:
             for a in range(0, 360, 15):
@@ -66,10 +77,12 @@ if stage == "fanout":
                 if any((pt - h).EuclideanNorm() < MM(0.75) for h in holes):
                     continue
                 circ = pcbnew.SHAPE_CIRCLE(pt, VR); seg = pcbnew.SHAPE_SEGMENT(c, pt, MM(0.25))
-                ok = True
+                ok = not any(z.GetIsRuleArea() and z.GetDoNotAllowTracks() and z.IsOnLayer(lay) and
+                             (z.Outline().Contains(pt) or z.Outline().Contains(pcbnew.VECTOR2I((c.x + pt.x) // 2, (c.y + pt.y) // 2)))
+                             for z in board.Zones())
                 for o in obst:
                     same = o.GetNetCode() == nc
-                    for L_ in (pcbnew.F_Cu, pcbnew.B_Cu):
+                    for L_ in CU_LAYERS:          # the via goes through every layer
                         if not o.IsOnLayer(L_):
                             continue
                         sh = o.GetEffectiveShape(L_)
@@ -81,7 +94,7 @@ if stage == "fanout":
                     best = pt; break
             if best: break
         if not best:
-            fail += 1; continue
+            fail += 1; print("  no fanout:", pad.GetParentFootprint().GetReference(), pad.GetNumber(), pad.GetNetname()); continue
         t = pcbnew.PCB_TRACK(board); t.SetStart(c); t.SetEnd(best); t.SetWidth(MM(0.25)); t.SetLayer(lay)
         t.SetNet(pad.GetNet()); t.SetLocked(True); board.Add(t)
         v = pcbnew.PCB_VIA(board); v.SetPosition(best); v.SetDrill(MM(0.3))
@@ -138,7 +151,7 @@ if stage == "finish":
                     if z.Outline().Contains(pos):
                         layers.add(L_)
         if len(layers) <= 1:                 # reaches copper on at most one layer: goes nowhere
-            board.Remove(t); removed += 1
+            board.Delete(t); removed += 1
     print("removed dangling vias", removed)
     widened = 0                      # router neck-downs below the fab minimum
     for t in board.GetTracks():
@@ -173,6 +186,12 @@ if stage == "finish":
             ok = all(filled(L_, pt) for L_ in (pcbnew.F_Cu, pcbnew.B_Cu))
             if ok and any((pt - h).EuclideanNorm() < MM(3.4) for h in holes):
                 ok = False
+            cr = getattr(L, "CORNER_R", 0)       # rounded board corners: stay 1 mm inside the arc
+            if ok and cr:
+                cx, cy = MM(L.BOARD_W / 2 - cr), MM(L.BOARD_H / 2 - cr)
+                ax, ay = abs(pt.x), abs(pt.y)
+                if ax > cx and ay > cy and ((ax - cx) ** 2 + (ay - cy) ** 2) ** 0.5 > MM(cr - 1.0):
+                    ok = False
             if ok and any((pt - h).EuclideanNorm() < MM(0.85) for h in drills):
                 ok = False
             if ok:

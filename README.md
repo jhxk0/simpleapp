@@ -5,11 +5,11 @@ Two KiCad 9 boards for a 5" quad, 30.5 x 30.5 mm M3 mounting.
 | Board | Size | Layers | Key parts |
 |---|---|---|---|
 | `fc/`  flight controller | 36 x 36 mm | 4 (1 oz) | STM32F405RGT6, ICM-42688-P, BMP280, W25Q128 16 MB, LMR33630 5 V/3 A buck, USB-C |
-| `esc/` 4-in-1 ESC (rev B) | 44 x 44 mm | 6 (2 oz outer, >=1 oz inner) | 4x STM32G071K8U6N (AM32), 12x LM2105, 24x CSD18543Q3A 60 V |
+| `esc/` 4-in-1 ESC (rev C) | 46 x 46 mm | 6 (2 oz outer, >=1 oz inner) | 4x STM32G071K8U6N (AM32), 12x LM2105, 24x CSD18543Q3A 60 V |
 
 **Status:** the FC is complete: ERC clean, DRC clean with schematic parity, and fab files generated.
-The ESC **schematic** is complete and ERC clean; its **layout is unfinished (placement and power copper
-only, signals not routed) and must not be ordered**. See "ESC layout status" below.
+The ESC **schematic** is complete and ERC clean. Its **layout is about 95 % routed and DRC-clean apart from
+38 open signal connections**, so it **must not be ordered yet**. See "ESC layout status" below.
 
 Input: 3-6S LiPo. Both boards are generated from Python sources in `tools/`. Edit `tools/*_design.py`
 (circuit) or `tools/*_layout.py` (placement), then rebuild; don't hand-edit the generated files unless
@@ -25,7 +25,7 @@ fc/fab/fc-BOM-jlcpcb.csv, fc-CPL-jlcpcb.csv JLCPCB assembly files
 fc/fab/fc-BOM-full.csv                      BOM with MPNs and sourcing status
 fc/drc.json, fc/erc.json                    last DRC / ERC reports
 esc/esc.kicad_sch, esc-schematic.pdf        ESC schematic (complete)
-esc/esc.kicad_pcb                           ESC layout, WIP: placement + power copper + plane fanout, unrouted
+esc/esc.kicad_pcb                           ESC layout, WIP: fully placed, power + gate drive done, 38 signal links open
 tools/                                      generators (see "Rebuilding")
 ```
 
@@ -79,7 +79,7 @@ against `Inc/targets.h` and `Mcu/g071/Src/comparator.c` in the AM32 repository:
 | Phase A/B/C low | PB15 / PB0 / PA7 (TIM1 CH3N/CH2N/CH1N) |
 | Signal in (DShot) | PC6 (TIM3 CH1) |
 | BEMF A / B / C | PA0 (COMP1 INM) / PA2 (COMP2 INM) / PB7 (COMP2 INM) |
-| Virtual neutral | PA1 (COMP1 INP) and PA3 (COMP2 INP) |
+| Virtual neutral | PA1 (COMP1 INP) and PA3 (COMP2 INP), formed from the three divided BEMF signals (3 x 10k) |
 | Voltage sense | PA5, 27.4k/1k (x28.4) |
 
 The driver (LM2105) has non-inverting high and low inputs, matching AM32's default (no `USE_INVERTED_LOW`).
@@ -93,31 +93,34 @@ Gates are driven directly by the LM2105 (no gate resistors); NRST is left to the
 Rating: CSD18543Q3A is 60 V / 8.1 mOhm. Treat the board as **~30 A burst / ~20 A continuous per motor
 with airflow**. Fine for typical 5" builds; not for high-kV 6S racing setups.
 
-## ESC layout status (rev B, unfinished)
+## ESC layout status (rev C, routing unfinished)
 
-Done:
+Rev C reworks the layout so the power stage routes deterministically:
+
+- 46 x 46 mm (was 44), same 30.5 mm M3 holes: the extra millimetre per side gives the corners, where two
+  ESCs' drivers meet, room for their bypass caps and input escapes.
 - 6-layer stack-up: F power stage | In1 GND plane | In2, In3 signals | In4 VBAT plane | B control.
-- Battery pads in the centre feed the GND/VBAT planes through 50 vias each (no shunt in the path).
-- Each edge carries one ESC: three half-bridges with phase pours to the motor pads on F and B,
-  VBAT/GND feed strips with via fields, notched pours with pre-routed high-side gate escapes, and
-  pre-routed phase taps. MCUs sit in the corners on the bottom.
-- Geometry passes DRC (no shorts or clearance errors); only routing is missing.
+- Battery pads in the centre feed the GND/VBAT planes through 35 vias each.
+- **Every half-bridge uses one fixed, hand-designed copper pattern**, rotated to all 12 positions:
+  low-side gate straight down the F channel between the VBAT/GND feed strips; high-side gate and the
+  switch node through that channel's gap on In2/In3 to vias beside the driver; boot cap, VDD bypass,
+  driver ground and the HI/LI input escapes all fixed. These 48 driver-to-FET links were what stalled
+  rev B; they are now complete and DRC-clean.
+- Back-EMF dividers sit on the bottom under the FETs and leave through the bottom channel; the virtual
+  neutral is formed at each MCU from the divided signals (3 x 10k), so no neutral wiring runs along the edges.
+- "No tracks" rule areas keep routing out of the phase pours and feed strips.
 
-Not done: signal routing. Freerouting completes about 85% and then stalls with ~44 connections left,
-almost all between each LM2105 and its two FETs. The gate traces, the switch-node (SH) link and the
-boot cap all have to pass a 1.6 mm gap between the feed-strip via fields, twelve times over. The phase-tap
-via also sits in the low-side gate's path, and on the outer half-bridges the corner MCUs occupy space
-those links need.
+Not done: **38 open connections on the MCU side** (neutral, SIG, PWM, SWD, 3.3 V, a few supplies),
+mostly around the four MCUs on the bottom. Freerouting gets to ~35; the extra grid router
+(`tools/finish_route.py`) pre-routes the long PWM/BEMF lines but does not close the rest. The inner
+layers still have plenty of free space, so these are ordinary short links. Two ways to finish:
 
-To finish it:
-1. Hand-route one half-bridge's driver-to-FET links (GH, GL, SH, boot cap) as a fixed pattern,
-   moving the phase-tap via out of the low-side gate's path.
-2. Replicate that pattern to the other 11 half-bridges by rotation (`tools/esc_layout.py` already
-   places everything per half-bridge this way), pull the corner MCUs clear of the outer units, then
-   let Freerouting route the rest (`tools/route_until_clean.sh esc`).
+1. In KiCad: open `esc/esc.kicad_pcb`, press `B` to refill zones, run DRC and route the listed
+   unconnected items by hand. In2/In3 are mostly empty.
+2. Improve the automation (a negotiated-congestion router, or moving the MCUs off the battery pads'
+   footprint so their pins can drop vias directly), then `python3 tools/pipeline.py esc route`.
 
-Alternatively, route the remaining short driver-to-FET connections by hand in KiCad. The FC also works
-with any off-the-shelf 30.5 mm 4-in-1 ESC (check its 8-pin pinout against the table above).
+The FC also works with any off-the-shelf 30.5 mm 4-in-1 ESC (check its 8-pin pinout against the table above).
 
 ## Before you order — verification checklist
 
@@ -144,10 +147,15 @@ JLCPCB/LCSC catalogue). Each is a short check:
 
 ## Rebuilding
 
-Requires KiCad 9 (`kicad-cli` + `pcbnew` Python), Java 25 and Freerouting 2.4.1.
+Requires KiCad 9 (`kicad-cli` and the `pcbnew` Python module), Java 25 and Freerouting 2.4.1. The tools
+find them automatically on Linux, macOS and Windows; otherwise set `KICAD_CLI`, `KICAD_PYTHON`,
+`FREEROUTING_JAR` and `JAVA` (see `tools/kienv.py`).
 
 ```
-python3 tools/build_sch.py fc        # schematic + ERC + netlist cross-check
-tools/run_route.sh fc                # place, fanout, route (Freerouting x2), pours, DRC
-python3 tools/fab.py fc              # Gerbers, drill, BOM, CPL, renders
+python3 tools/pipeline.py fc sch          # schematic + ERC + netlist cross-check
+python3 tools/pipeline.py fc route 80 3   # place, fanout, Freerouting, pours, DRC (retries until clean)
+python3 tools/pipeline.py fc fab          # Gerbers, drill, BOM, CPL, renders
 ```
+
+`pipeline.py esc ...` runs the same steps for the ESC (it also pre-routes the PWM/BEMF lines and runs
+the finishing router).
